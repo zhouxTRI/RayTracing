@@ -14,7 +14,7 @@ class ray {
     const vec3& direction() const { return dir; }  //返回射线的方向向量，不可变引用
 
     point3 at(double t) const {
-        return orig + t*dir;  
+        return orig + t*dir;                        //返回射线在参数t处的点，公式为P(t) = A + t*B，其中A是射线的起点，B是射线的方向向量
     }
 
     private:

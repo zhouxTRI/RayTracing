@@ -72,7 +72,7 @@ inline vec3 operator/(vec3 v, double t) {                                   //�
     return (1/t) * v;                                                       //调用上面的重载函数
 }
 inline double dot(const vec3 &u, const vec3 &v) {                           //重载dot函数，实现向量的点积:用于计算两个向量的夹角余弦值，或者判断两个向量是否垂直
-    return u.e[0] * v.e[0] + u.e[1] * v.e[1] + u.e[2] * v.e[2];             //返回两个向量的点积，为标量
+    return u.e[0] * v.e[0] + u.e[1] * v.e[1] + u.e[2] * v.e[2];             //返回两个向量的点积，为标量;小于0，说明两个向量夹角大于90度;等于0，说明两个向量垂直;大于0，说明两个向量夹角小于90度
 }
 inline vec3 cross(const vec3 &u, const vec3 &v) {                           //重载cross函数，实现向量的叉积：用于计算两个向量的法向量，或者判断两个向量是否平行
     return vec3(u.e[1] * v.e[2] - u.e[2] * v.e[1],

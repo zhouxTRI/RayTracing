@@ -1,6 +1,8 @@
+#include "rtweekend.h"
 #include "color.h"
-#include "ray.h"
-#include "vec3.h"
+#include "hittable.h"
+#include "hittable_list.h"
+#include "sphere.h"
 
 #include <iostream>
 
@@ -20,13 +22,18 @@ double hit_sphere(const point3& center, double radius, const ray& r){          /
    
 }
 
-color ray_color(const ray& r){
-    //在视口Z轴上放一个球,球心位于(0,0,-1)，如果射线与球相交，返回红色，否则返回背景颜色
-    auto t = hit_sphere(point3(0,0,-1), 0.5, r);                                   
-    if(t > 0.0){
-        vec3 N = unit_vector(r.at(t) - point3(0,0,-1));                     //计算射线与球的交点的法向量
-        return 0.5*color(N.x() + 1.0, N.y() + 1.0, N.z() + 1.0);            //如果射线与球相交，返回球的法向量映射到[0,1]范围内的颜色值，形成渐变效果
+color ray_color(const ray& r, const hittable& world){
+    hit_record rec;
+    if(world.hit(r, 0, infinity, rec))
+    {
+        return 0.5*(rec.normal + color(1,1,1));  //如果射线与物体相交，返回法向量映射到[0,1]范围内的颜色值，形成渐变效果
     }
+    // 在视口Z轴上放一个球,球心位于(0,0,-1)，如果射线与球相交，返回红色，否则返回背景颜色
+    // auto t = hit_sphere(point3(0,0,-1), 0.5, r);                                   
+    // if(t > 0.0){
+    //     vec3 N = unit_vector(r.at(t) - point3(0,0,-1));                     //计算射线与球的交点的法向量
+    //     return 0.5*color(N.x() + 1.0, N.y() + 1.0, N.z() + 1.0);            //如果射线与球相交，返回球的法向量映射到[0,1]范围内的颜色值，形成渐变效果
+    // }
 
     vec3 unit_direction = unit_vector(r.direction());                       //将射线方向向量归一化
     auto a = 0.5*(unit_direction.y() + 1.0);                                //将y分量映射到[0,1]范围内,为什么是0.5*(y+1)?因为y分量的范围是[-1,1],所以加1后范围是[0,2],再乘以0.5后范围是[0,1]
@@ -39,6 +46,12 @@ int main(){
     int image_width = 400;                                                  //图像宽度
     int image_height = static_cast<int>(image_width / aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;                   //确保图像高度至少为1
+    
+    //world
+    hittable_list world;                                                    //创建一个hittable_list对象，存储所有的hittable对象
+    world.add(make_shared<sphere>(point3(0,0,-1), 0.5));                    //添加一个球体，球心位于(0,0,-1)，半径为0.5
+    world.add(make_shared<sphere>(point3(0,-100.5,-1), 100));
+
     //camera
     auto focal_length = 1.0;                                                //焦距
     auto viewport_height = 2.0;                                             //视口高度
@@ -66,7 +79,7 @@ int main(){
             auto ray_direction = pixel_center - camera_center;  //计算射线方向向量
             ray r(camera_center, ray_direction);    
             
-            color pixel_color = ray_color(r);
+            color pixel_color = ray_color(r, world);
             write_color(std::cout, pixel_color);                                                    //将像素颜色输出到流
         }
     }

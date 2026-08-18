@@ -31,9 +31,11 @@ class sphere : public hittable {
                 }
             }
             
-            rec.t = root;
-            rec.p = r.at(rec.t);
-            rec.normal = (rec.p - center) / radius;                                 //计算法向量，球的法向量是从球心指向交点的向量，归一化后就是法向量
+            rec.t = root;                                                           //根作为射线参数t，可用来计算交点和法向量
+            rec.p = r.at(rec.t);                                                    //计算交点，P(t) = A + t*B，其中A是射线的起点，B是射线的方向向量
+            vec3 outward_normal = (rec.p - center) / radius;
+            rec.set_face_normal(r, outward_normal);
+           
             return true;                                                                 //射线与球相交，返回true
         }
 

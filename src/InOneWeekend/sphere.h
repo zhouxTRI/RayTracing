@@ -9,8 +9,8 @@ class sphere : public hittable {
         sphere(const point3& center, double radius)
         : center(center), radius(std::fmax(0.0, radius)) {}
 
-        bool hit(const ray&r, double t_min, double t_max, hit_record& rec) const override {
-            vec3 oc = center - r.origin();          //计算球心到射线起点的向量
+        bool hit(const ray&r, interval ray_t, hit_record& rec) const override {
+            vec3 oc = center - r.origin();                                                  //计算球心到射线起点的向量
             auto a = r.direction().length_squared();
             auto halfb = dot(oc, r.direction());
             auto c = oc.length_squared() - radius*radius;
@@ -24,9 +24,9 @@ class sphere : public hittable {
             auto sqrtd = sqrt(discriminant);
             //找到最近的根
             auto root = (halfb - sqrtd) / a;
-            if(root <= t_min || root >= t_max){                                             //判断根是否在范围内
-                root = (halfb + sqrtd) / a;
-                if(root <= t_min || root >= t_max){     
+            if(!ray_t.surrounds(root)){                                                     //判断根是否在范围内
+                root = (halfb + sqrtd) / a;                                                 //如果不在范围内，尝试另一个根
+                if(!ray_t.surrounds(root)){
                     return false;                                                           //如果两个根都不在范围内，说明射线与球没有交点
                 }
             }

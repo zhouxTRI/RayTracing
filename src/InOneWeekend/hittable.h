@@ -1,14 +1,17 @@
 #ifndef HITTABLE_H
 #define HITTABLE_H
 
-#include "ray.h"
+#include "rtweekend.h"
+
+class material;
 
 class hit_record {                              //记录射线与物体相交的信息
     public:
-        point3 p;  //交点
-        vec3 normal;  //法向量
-        double t;  //射线参数t
-        bool front_face;  //是否是正面交点
+        point3 p;                       //交点
+        vec3 normal;                    //法向量
+        shared_ptr<material> mat;       //材质指针
+        double t;                       //射线参数t
+        bool front_face;                //是否是正面交点
 
         void set_face_normal(const ray& r, const vec3& outward_normal){
             //设置法向量的方向，使其始终指向射线的外侧，确保法向量的方向与射线方向相反

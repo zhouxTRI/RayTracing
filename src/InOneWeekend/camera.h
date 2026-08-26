@@ -4,6 +4,7 @@
 #include "rtweekend.h"
 #include "color.h"
 #include "hittable.h"
+#include "material.h"
 
 #include <iostream>
 
@@ -90,8 +91,11 @@ class camera{
             if(depth <= 0) return color(0, 0, 0);                                   //递归终止条件，超过最大递归深度，返回黑色
             if(world.hit(r, interval(0.001, infinity), rec))                        //0.001是为了忽略因为 浮点数精度问题 而造成射线与物体的交点在起点附近的情况，作为解决阴影痤疮的最简单的方法
             {
-                vec3 direction = rec.normal + random_unit_vector();                 //根据 Lambertian漫反射模型，计算出新的随机方向向量，方向是以交点法向量终点为中心、法向量长度为半径的单位球内的随机方向
-                return 0.5 * ray_color(ray(rec.p, direction), depth-1, world);      //递归调用，模拟漫反射；递归终止：当采样射线没有与物体相交时，返回背景颜色
+                ray scattered;
+                color attenuation;
+                if(rec.mat->scatter(r, rec, attenuation, scattered))
+                    return attenuation * ray_color(scattered, depth-1, world);      //递归计算散射光线的颜色，并乘以衰减系数
+                return color(0, 0, 0);                                               //如果散射失败，返回黑色
             }
 
             //背景：蓝白渐变天空

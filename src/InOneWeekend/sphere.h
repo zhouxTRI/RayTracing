@@ -6,8 +6,8 @@
 
 class sphere : public hittable {
     public:
-        sphere(const point3& center, double radius)
-        : center(center), radius(std::fmax(0.0, radius)) {}
+        sphere(const point3& _center, double _radius, shared_ptr<material> _material)
+        : center(_center), radius(_radius), mat(_material) {}
 
         bool hit(const ray&r, interval ray_t, hit_record& rec) const override {
             vec3 oc = center - r.origin();                                                  //计算球心到射线起点的向量
@@ -35,13 +35,15 @@ class sphere : public hittable {
             rec.p = r.at(rec.t);                                                    //计算交点，P(t) = A + t*B，其中A是射线的起点，B是射线的方向向量
             vec3 outward_normal = (rec.p - center) / radius;
             rec.set_face_normal(r, outward_normal);
-           
-            return true;                                                                 //射线与球相交，返回true
+            rec.mat = mat;                                                          //将材质指针传递给hit_record，方便后续计算散射光线和衰减系数
+
+            return true;                                                            //射线与球相交，返回true
         }
 
     private:
         point3 center;
         double radius;
+        shared_ptr<material> mat;
 };
 
 #endif

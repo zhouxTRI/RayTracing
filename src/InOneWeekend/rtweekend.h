@@ -30,9 +30,10 @@ inline double random_double(){                          //返回[0,1)范围内�
 inline double random_double(double min, double max){
     return min + (max - min) * random_double();         //返回[min,max)范围内的随机数
 }
+
 // Common Headers
 
-
+#include "color.h"
 #include "interval.h"
 #include "ray.h"
 #include "vec3.h"

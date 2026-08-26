@@ -11,7 +11,7 @@ class camera{
     public:
         double aspect_ratio = 1.0;                  //图像宽高比
         int image_width = 100;                      //图像宽度
-        int samples_per_pixel = 10;                 //每个像素的采样次数
+        int samples_per_pixel = 10;                 //默认每个像素的采样次数=10
 
         void render(const hittable& world){
             initialize();
@@ -31,9 +31,9 @@ class camera{
                     for(int sample = 0; sample < samples_per_pixel; sample++)
                     {
                         ray r = get_ray(i, j);                                                       
-                        pixel_color += ray_color(r, world);
+                        pixel_color += ray_color(r, world);                                 //累加每次采样的颜色值  
                     }
-                    write_color(std::cout, pixel_color, samples_per_pixel);                                             //将像素颜色输出到流
+                    write_color(std::cout, pixel_color, samples_per_pixel);                 //将累加的结果按采样次数平均后，将像素颜色输出到流
                 }
             }
             std::clog << "\nDone.       \n";
@@ -69,10 +69,10 @@ class camera{
         }
         ray get_ray(int i, int j) const{                                                    //获得一条从相机中心指向像素中心点的射线
             auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);    //计算像素中心点在世界坐标系中的位置
-            auto pixel_sample = pixel_center + pixel_sample_square();                   //在像素内随机采样一个点，增加抗锯齿效果
+            auto pixel_sample = pixel_center + pixel_sample_square();                       //在像素内随机采样一个点，增加抗锯齿效果
 
             auto ray_origin = center;                                                       //射线起点为相机中心
-            auto ray_direction = pixel_sample - ray_origin;                                 //计算射线方向向量
+            auto ray_direction = pixel_sample - ray_origin;                                 //计算射线方向向量,从相机中心指向像素采样点
             return ray(ray_origin, ray_direction);                                              //创建一条从相机中心指向
         }
 
@@ -87,7 +87,7 @@ class camera{
             hit_record rec;
             if(world.hit(r, interval(0, infinity), rec))
             {
-                return 0.5*(rec.normal + color(1,1,1));                                 //如果射线与物体相交，返回法向量映射到[0,1]范围内的颜色值，形成渐变效果
+                return 0.5*(rec.normal + color(1,1,1));                             //如果射线与物体相交，返回法向量映射到[0,1]范围内的颜色值，形成渐变效果
             }
 
             vec3 unit_direction = unit_vector(r.direction());                       //将射线方向向量归一化

@@ -8,8 +8,8 @@ using color=vec3;
 
 void write_color(std::ostream& out, const color& pixel_color, int samples_per_pixel){
     auto r = pixel_color.x();
-    auto b = pixel_color.y();
-    auto g = pixel_color.z();
+    auto g = pixel_color.y();
+    auto b = pixel_color.z();
     //对每个像素的颜色进行采样平均
     auto scale = 1.0 / samples_per_pixel;
     r *= scale;

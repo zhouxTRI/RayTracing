@@ -30,6 +30,7 @@ int main(){
     cam.aspect_ratio = 16.0 / 9.0;                                             //设置图像宽高比
     cam.image_width = 400;                                                     //设置图像宽度
     cam.samples_per_pixel = 100;                                               //设置每个像素的采样次数
+    cam.max_depth = 50;                                                        //设置漫反射计算最大递归深度
 
     //render
     cam.render(world);

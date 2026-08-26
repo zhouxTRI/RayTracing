@@ -13,6 +13,8 @@ class camera{
         int image_width = 100;                      //图像宽度
         int samples_per_pixel = 10;                 //默认每个像素的采样次数=10
 
+        int max_depth = 10;                         //漫反射计算最大递归深度，防止无限递归
+
         void render(const hittable& world){
             initialize();
 
@@ -31,7 +33,7 @@ class camera{
                     for(int sample = 0; sample < samples_per_pixel; sample++)
                     {
                         ray r = get_ray(i, j);                                                       
-                        pixel_color += ray_color(r, world);                                 //累加每次采样的颜色值  
+                        pixel_color += ray_color(r, max_depth, world);                                 //累加每次采样的颜色值  
                     }
                     write_color(std::cout, pixel_color, samples_per_pixel);                 //将累加的结果按采样次数平均后，将像素颜色输出到流
                 }
@@ -83,13 +85,16 @@ class camera{
         }
 
         //计算射线与物体的交点，并返回像素颜色
-        color ray_color(const ray& r, const hittable& world) const {
+        color ray_color(const ray& r, int depth, const hittable& world) const {
             hit_record rec;
-            if(world.hit(r, interval(0, infinity), rec))
+            if(depth <= 0) return color(0, 0, 0);                                   //递归终止条件，超过最大递归深度，返回黑色
+            if(world.hit(r, interval(0.001, infinity), rec))                        //0.001是为了忽略因为 浮点数精度问题 而造成射线与物体的交点在起点附近的情况，作为解决阴影痤疮的最简单的方法
             {
-                return 0.5*(rec.normal + color(1,1,1));                             //如果射线与物体相交，返回法向量映射到[0,1]范围内的颜色值，形成渐变效果
+                vec3 direction = rec.normal + random_unit_vector();                 //根据 Lambertian漫反射模型，计算出新的随机方向向量，方向是以交点法向量终点为中心、法向量长度为半径的单位球内的随机方向
+                return 0.5 * ray_color(ray(rec.p, direction), depth-1, world);      //递归调用，模拟漫反射；递归终止：当采样射线没有与物体相交时，返回背景颜色
             }
 
+            //背景：蓝白渐变天空
             vec3 unit_direction = unit_vector(r.direction());                       //将射线方向向量归一化
             auto a = 0.5*(unit_direction.y() + 1.0);                                //将y分量映射到[0,1]范围内,为什么是0.5*(y+1)?因为y分量的范围是[-1,1],所以加1后范围是[0,2],再乘以0.5后范围是[0,1]
             return (1.0-a)*color(1.0, 1.0, 1.0) + a*color(0.5, 0.7, 1.0);           //线性插值，返回背景颜色，形成渐变效果,blendedValue = (1-a)*startValue + a*endValue, startValue是color(1.0, 1.0, 1.0), endValue是color(0.5, 0.7, 1.0)

@@ -3,7 +3,7 @@
 
 #include "ray.h"
 
-class hit_record {
+class hit_record {                              //记录射线与物体相交的信息
     public:
         point3 p;  //交点
         vec3 normal;  //法向量

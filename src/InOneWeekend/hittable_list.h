@@ -24,7 +24,7 @@ class hittable_list : public hittable {
 
             for( const auto& object : objects)
             {                                                                           //调用的是object的hit函数，在main程序里会传入sphere对象的智能指针，调用的是sphere类的hit函数
-                if(object->hit(r, interval(ray_t.min, closest_so_far), temp_rec))                  //当object的t大于closest_so_far时，hit函数返回false，说明该交点不是最近的交点，忽略该交点
+                if(object->hit(r, interval(ray_t.min, closest_so_far), temp_rec))       //当object的t大于closest_so_far时，hit函数返回false，说明该交点不是最近的交点，忽略该交点
                 {
                     hit_anything = true;
                     closest_so_far = temp_rec.t;                                         //更新最近的交点距离

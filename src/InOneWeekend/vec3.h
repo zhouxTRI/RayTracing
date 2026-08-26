@@ -43,7 +43,18 @@ class vec3 {
         double length_squared() const{
             return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];  //返回向量的长度的平方
         }
+
+        //生成随机向量，长度在[0,1)之间，方向随机
+        static vec3 random(){    
+            return vec3(random_double(), random_double(), random_double());                         //static在这里的作用是将函数与类关联，而不是与类的对象关联。
+        }                                                                                           //也就是说，static成员函数可以在没有创建类的对象的情况下被调用。
+        static vec3 random(double min, double max){                                                 //它们不能访问类的非静态成员变量或非静态成员函数，因为它们没有this指针。
+            return vec3(random_double(min,max), random_double(min,max), random_double(min,max));    //静态成员函数通常用于实现与类相关的功能，但不依赖于类的具体实例。
+        }
 };
+
+
+
 
 //point3 
 using point3 = vec3;   //point3是vec3的别名，表示三维空间中的点
@@ -83,6 +94,25 @@ inline vec3 unit_vector(vec3 v) {                                           //�
     return v / v.length();                                                  //返回一个新的vec3对象，其分量为原向量的分量除以向量的长度
 }
 
+//用拒绝方法生成单位球内的随机向量
+inline vec3 random_in_unit_sphere() {
+    while(true){
+        auto p = vec3::random(-1,1);
+        if(p.length_squared() < 1) return p;
+    }
+}
+//将单位球内的随机向量归一化，得到随机单位球向量（从单位球心指向球面上的随机点的向量）
+inline vec3 random_unit_vector(){
+    return unit_vector(random_in_unit_sphere());
+}
+//确定随机向量在指定法向量的半球内
+inline vec3 random_on_hemisphere(const vec3& normal) {
+    vec3 on_unit_sphere = random_unit_vector();
+    if(dot(on_unit_sphere, normal) > 0.0)   
+        return on_unit_sphere;
+    else
+        return -on_unit_sphere;
+}
 
 
 #endif

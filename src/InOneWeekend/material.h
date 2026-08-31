@@ -49,4 +49,38 @@ class metal : public material{
         double fuzz;                        //金属表面的粗糙度，范围为[0,1]，0表示完全光滑，1表示完全粗糙，粗糙度越大，散射光线的方向越随机，反射光线的方向越不确定
 };
 
+class dielectric : public material{
+    public:
+        dielectric(double index_of_refraction) : ir(index_of_refraction) {}   
+
+        bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered)
+        const override {
+            attenuation = color(1.0,1.0,1.0);                           //衰减系数为1，表示光线在介质中传播时不会被吸收
+            double refraction_ratio = rec.front_face ? (1.0/ir) : ir;   //如果是正面交点，折射率为1/ir，否则为ir：因为光线从空气进入介质时，折射率为1/ir，从介质进入空气时，折射率为ir
+            vec3 unit_direction = unit_vector(r_in.direction());            
+            double cos_theta = fmin(dot(-unit_direction, rec.normal), 1.0);  //计算入射角的余弦值，fmin是为了避免浮点数误差导致的cos_theta大于1
+            double sin_theta = sqrt(1.0 - cos_theta*cos_theta);
+            bool cannot_refract = refraction_ratio * sin_theta > 1.0;   //如果折射率乘以入射角的正弦值大于1，说明光线无法折射，发生全反射
+            vec3 direction;
+
+            if (cannot_refract || reflectance(cos_theta, refraction_ratio) > random_double()){      //随机数是为了模拟光线在介质界面上的反射和折射的概率分布，增加渲染的真实感
+                direction = reflect(unit_direction, rec.normal);                    //反射光线的方向向量
+            }else{
+                direction = refract(unit_direction, rec.normal, refraction_ratio);  //折射光线的方向向量
+            }
+            
+            scattered = ray(rec.p, direction);  
+            return true;
+        }
+
+    private:
+        double ir; // Index of Refraction 折射率,表示光线在不同介质中的传播速度的比值，范围为[1,∞)，空气的折射率为1.0，水的折射率为1.33，玻璃的折射率为1.5，钻石的折射率为2.42    
+
+        static double reflectance(double cosine, double ref_idx){  //Schlick's approximation 计算反射率的近似值，cosine为入射角的余弦值，ref_idx为折射率
+            auto r0 = (1-ref_idx) / (1+ref_idx);                    //计算反射率的近似值
+            r0 = r0*r0;                                             
+            return r0 + (1-r0)*pow((1-cosine),5);                   //返回反射率的近似值,当该值大于随机数时，说明光线发生反射，否则发生折射；
+        }                                                           //Schlick's approximation是一个经验公式，用于计算光线在不同介质界面上的反射率，能够在不进行复杂的光学计算的情况下，快速地估计反射率。
+};
+
 #endif  

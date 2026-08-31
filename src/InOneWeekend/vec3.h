@@ -46,7 +46,7 @@ class vec3 {
 
         bool near_zero() const {                                              //向量接近零向量，返回true
             auto s = 1e-8;                                                    //定义一个很小的数，作为判断向量是否接近零向量的阈值
-            return (fabs(e[0]) < s) && (fabs(e[1]) < s) && (fabs(e[2]) < s);  //如果向量的三个分量都小于阈值，则认为向量接近零向量
+            return (fabs(e[0]) < s) && (fabs(e[1]) < s) && (fabs(e[2]) < s);  //如果向量的三个分量都小于阈值，则认为向量接近零向量;fabs是取绝对值函数，防止分量为负数
         }
 
         //生成随机向量，长度在[0,1)之间，方向随机
@@ -118,10 +118,16 @@ inline vec3 random_on_hemisphere(const vec3& normal) {
     else
         return -on_unit_sphere;
 }
-//
+//根据入射向量和单位法向量求反射向量
 inline vec3 reflect(const vec3& v, const vec3& n) {     //反射向量
     return v + (2 * -dot(v,n) * n);                     //v是入射向量，n是单位法向量，返回反射向量
 }
-
+//根据入射向量和单位法向量求折射向量
+inline vec3 refract(const vec3& uv, const vec3& n, double etai_over_etat){
+    auto cos_theta = fmin(dot(-uv, n) , 1.0);                                   //计算入射角的余弦值，fmin是返回两个参数中较小的一个，为了避免浮点数误差导致的cos_theta大于1
+    vec3 r_out_perp = etai_over_etat * (uv + cos_theta * n);                    //计算折射向量的垂直分量
+    vec3 r_out_parallel = -sqrt(fabs(1.0 - r_out_perp.length_squared())) * n;   //计算折射向量的平行分量,fabs返回绝对值，避免浮点数误差导致的负数开方
+    return r_out_perp + r_out_parallel;  //返回折射向量 
+}
 
 #endif

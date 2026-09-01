@@ -1,6 +1,6 @@
 # Ray Tracing 光线追踪器
 
-一个使用C++实现的高性能光线追踪渲染引擎，基于Peter Shirley的《Ray Tracing in One Weekend》教程。该项目演示了现代计算机图形学中光线追踪算法的核心原理和实现技巧。
+一个使用C++实现的高性能光线追踪渲染引擎，基于Peter Shirley的《Ray Tracing in One Weekend》教程。该项目演示了现代计算机图形学中光线追踪算法的核心原理和实现技巧。仅自学使用。
 
 ## 🎯 项目概述
 
@@ -312,6 +312,59 @@ world.add(make_shared<sphere>(point3(0, 0, 0), 1.0, material_ground));
 - **单次渲染**：1200×675分辨率，10采样率约需几秒到几十秒（取决于CPU）
 - **采样率影响**：采样率越高，图像质量越好，但渲染时间成线性增加
 - **递归深度影响**：深度越大，反射折射效果越逼真，但性能消耗越大
+
+## 🔧 常见问题与解决方案
+
+### 问题1：法向量着色显示异常
+**现象**：图像着色不正确或显示全黑
+
+**原因**：在 `src/InOneWeekend/main.cc` 中，`hit_sphere()` 函数返回类型不正确
+
+**解决方案**：
+- `hit_sphere()` 必须返回 `double` 类型的 `t` 值（光线参数），而不是 `bool` 类型
+- 返回值 `t` 用于后续的法向量计算和着色
+
+```cpp
+// ❌ 错误做法
+bool hit_sphere(const point3& center, double radius, const ray& r) {
+    // ...
+}
+
+// ✅ 正确做法
+double hit_sphere(const point3& center, double radius, const ray& r) {
+    // 返回t值用于着色
+}
+```
+
+### 问题2：光线-球体相交计算精度问题
+**现象**：渲染结果有黑点、闪烁或光线穿过物体
+
+**原因**：使用标准的二次方程求解法导致数值稳定性问题
+
+**解决方案**：
+使用 **half_b 优化形式**来求解光线-球体相交，这是标准的数值计算技巧：
+
+```cpp
+// 标准形式：at² + bt + c = 0
+// 优化为：at² + (2h)t + c = 0，其中 b = 2h
+// 这样可以减少浮点运算误差并提高数值稳定性
+
+double a = dot(r.direction(), r.direction());
+double half_b = dot(oc, r.direction());  // oc = ray.origin - center
+double c = dot(oc, oc) - radius * radius;
+
+double discriminant = half_b * half_b - a * c;
+if (discriminant < 0) return -1.0;  // 无交点
+
+double sqrt_discriminant = sqrt(discriminant);
+double t = (-half_b - sqrt_discriminant) / a;  // 取较小的t值（最近的交点）
+return t;
+```
+
+**为什么这样做**：
+- 减少浮点运算错误
+- 避免数值溢出
+- 提高渲染结果的稳定性和准确性
 
 ## 🎓 学习资源
 

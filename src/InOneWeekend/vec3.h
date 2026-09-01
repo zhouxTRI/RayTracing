@@ -95,8 +95,15 @@ inline vec3 cross(const vec3 &u, const vec3 &v) {                           //�
                 u.e[2] * v.e[0] - u.e[0] * v.e[2],
                 u.e[0] * v.e[1] - u.e[1] * v.e[0]);                         //返回两个向量的叉积
 }
-inline vec3 unit_vector(vec3 v) {                                           //重载unit_vector函数，实现向量的单位化
+inline vec3 unit_vector(const vec3& v) {                                           //重载unit_vector函数，实现向量的单位化
     return v / v.length();                                                  //返回一个新的vec3对象，其分量为原向量的分量除以向量的长度
+}
+inline vec3 random_in_unit_disk() {                                         //返回一个在单位圆盘内随机采样的点，范围为[-1,1) * [-1,1)
+    while(true){
+        auto p = vec3(random_double(-1,1), random_double(-1,1), 0);
+        if(p.length_squared() < 1) return p;                               //如果点在单位圆盘内，则返回该点
+    }
+
 }
 
 //用拒绝方法生成单位球内的随机向量

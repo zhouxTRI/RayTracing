@@ -15,7 +15,15 @@ class camera{
         int samples_per_pixel = 10;                 //默认每个像素的采样次数=10
 
         int max_depth = 10;                         //漫反射计算最大递归深度，防止无限递归
+        double vfov = 90;                         //垂直视场角，单位为度
+        point3 lookfrom = point3(0, 0, -1);          //相机查看的位置
+        point3 lookat = point3(0, 0, 0);             //相机正观察的点
+        vec3 vup = vec3(0, 1, 0);                    //相机的上方向，决定了相机的旋转角度
 
+        double defocus_angle = 0.0;               //通过每个像素的光线变化角度，越大，景深效果越明显，模糊越严重
+        double focus_dist = 10;                   //控制对焦距离；只有离焦平面附近的物体才会清晰，离焦平面较远的物体会模糊；
+                                                    ///当 defocus_angle 固定时，focus_dist 越大，失焦盘的物理半径就越大。
+                                                    ///失焦盘越大，光线出发点的分布范围越广，落到同一像素上的光线散布范围就越大，​模糊程度就越强
         void render(const hittable& world){
             initialize();
 
@@ -41,40 +49,54 @@ class camera{
             }
             std::clog << "\nDone.       \n";
         }
+
     private:
         int image_height;                           //图像高度    
         point3 center;                              //相机中心
         point3 pixel00_loc;                         //(0,0)像素中心点在世界坐标系中的位置
         vec3 pixel_delta_u;
         vec3 pixel_delta_v;
+        vec3 u,v,w;                                 //相机坐标系的三个基向量，u为水平向量，v为垂直向量，w为视图方向相反的单位向量
+        vec3 defocus_disk_u;                        //失焦盘的水平半径
+        vec3 defocus_disk_v;                        //失焦盘的垂直半径
 
         void initialize(){
             image_height = static_cast<int>(image_width / aspect_ratio);                   //根据宽高比计算图像高度
             image_height = (image_height < 1 ) ? 1 : image_height;                          
-            center = point3(0, 0, 0);                                                      //相机位置
+            center = lookfrom;                                                      //相机位置
 
             //确定viewport
-            auto focal_length = 1.0;                                                       //焦距
-            auto viewport_height = 2.0;
+            //auto focal_length = (lookfrom-lookat).length();                                //焦距
+            auto theta = degrees_to_radians(vfov);                                         //将垂直视场角转换为弧度
+            auto h = tan(theta/2);                                                         //计算视口高度的一半，tan(theta/2) = (viewport_height/2) / focal_length
+            auto viewport_height = 2 * h * focus_dist;                                     //计算视口高度
             auto viewport_width = viewport_height * (double(image_width) / image_height);  //根据图像宽高比计算视口宽度
-
+                //计算相机坐标系的三个基向量
+                w = unit_vector(lookfrom - lookat);                                      
+                u = unit_vector(cross(vup, w));                                             //指向右侧的水平向量                               
+                v = cross(w, u);                                                               
                 //计算水平和垂直视口边缘上的向量
-            auto viewport_u = vec3(viewport_width, 0, 0);                                   //水平向量
-            auto viewport_v = vec3(0, -viewport_height, 0);                                 //camera空间坐标系y轴向上，图像坐标y轴向下，所以这里取负值
+            vec3 viewport_u = viewport_width * u;                                           //水平向量
+            vec3 viewport_v = viewport_height * -v;                                         //camera空间坐标系y轴向上，图像坐标y轴向下，所以这里取负值
                 //计算每个像素的宽度和高度
             pixel_delta_u = viewport_u / image_width;
             pixel_delta_v = viewport_v / image_height;
                 //计算视口左上角的点
             auto viewport_upper_left = 
-                center -vec3(0,0,focal_length) - viewport_u/2 - viewport_v/2;
+                center - (focus_dist*w) - viewport_u/2 - viewport_v/2;
             pixel00_loc = viewport_upper_left + 0.5*(pixel_delta_u + pixel_delta_v);       //计算(0,0)像素中心点在世界坐标系中的位置
-
+                //计算相机失焦盘的基向量
+            auto defocus_radius = focus_dist * tan(degrees_to_radians(defocus_angle/2));    //计算的是相机失焦盘的半径，defocus_angle是相机的光圈角度
+            defocus_disk_u = defocus_radius * u;                                               
+            defocus_disk_v = defocus_radius * v;                                               
         }
-        ray get_ray(int i, int j) const{                                                    //获得一条从相机中心指向像素中心点的射线
+
+        ray get_ray(int i, int j) const{                                                    //获得一条从相机中心指向像素中心点的射线：获取像素位置i,j的随机采样相机光线
+
             auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);    //计算像素中心点在世界坐标系中的位置
             auto pixel_sample = pixel_center + pixel_sample_square();                       //在像素内随机采样一个点，增加抗锯齿效果
 
-            auto ray_origin = center;                                                       //射线起点为相机中心
+            auto ray_origin = (defocus_angle <= 0) ? center : defocus_disk_sample();        //如果defocus_angle为0，则不使用景深效果，射线起点为相机中心，否则在失焦盘上随机采样一个点作为射线起点
             auto ray_direction = pixel_sample - ray_origin;                                 //计算射线方向向量,从相机中心指向像素采样点
             return ray(ray_origin, ray_direction);                                              //创建一条从相机中心指向
         }
@@ -83,6 +105,10 @@ class camera{
             auto px = -0.5 + random_double();                       //在[-0.5,0.5)范围内随机采样一个点
             auto py = -0.5 + random_double();
             return (px * pixel_delta_u) + (py * pixel_delta_v);     //将采样点映射到像素内
+        }
+        point3 defocus_disk_sample() const{                         //返回相机失焦盘中随机一点
+            auto p = random_in_unit_disk();                         
+            return center + (p[0] * defocus_disk_u) + (p[1] * defocus_disk_v);  //将采样点映射到失焦盘内
         }
 
         //计算射线与物体的交点，并返回像素颜色
